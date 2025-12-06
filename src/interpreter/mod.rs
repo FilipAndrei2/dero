@@ -2,13 +2,13 @@ pub(crate) struct Interpreter {
 }
 
 impl Interpreter {
-
-    pub fn new() -> Interpreter {
+    pub(crate) fn new() -> Interpreter {
         Interpreter {
+
         }
     }
 
-    pub fn run(&self) {
+    pub(crate) fn run(&mut self) {
         println!("Interpreting..");
     }
 }
