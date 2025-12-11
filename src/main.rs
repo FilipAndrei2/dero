@@ -1,7 +1,8 @@
-mod interpreter;
-use interpreter::Interpreter;
+mod compiler;
+use compiler::Compiler;
 
 fn main() {
-    let interpreter: Interpreter = Interpreter::new();
-    interpreter.run();
+    let compiler= Compiler::new();
+    let code: String = "println(\"Hello, world!\");".to_string();
+    compiler.compile(code);
 }
