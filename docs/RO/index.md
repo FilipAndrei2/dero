@@ -1,9 +1,9 @@
 
 # Disclaimer!
-Acest proiect este intr-un stadiu foarte timpuriu de dezvoltare. Toate aspectele prezentate mai jos sunt subject to change, iar multe functionalitati inca nu sunt implementate. Recomand tratarea documentatiei curente ca si o declaratie a filosofiei limbajului, sau ca si o lectura usoara despre cum ar trebui sa arate limbajul de programare "perfect" din perspectiva unui pasionat de programare. Indiferent de orice, multumesc ca ai ales sa deschizi acest manual si sper sa te distrezi in continuare cel putin la fel de mult cat m-am distrat eu dezvoltand Dero. Have fun! 🙂
+Acest proiect este intr-un stadiu foarte timpuriu de dezvoltare. Toate aspectele prezentate mai jos sunt subject to change, iar multe functionalitati inca nu sunt implementate. Recomand tratarea documentatiei curente ca si o declaratie a filosofiei limbajului, sau ca si o lectura usoara despre cum ar trebui sa arate limbajul de programare "perfect" din perspectiva unui pasionat de programare. Indiferent de orice, multumesc ca ai ales sa deschizi acest manual si sper sa te distrezi in continuare cel putin la fel de mult cat m-am distrat eu dezvoltand Eagle. Have fun! 🙂
 
 Filip Andrei
-# Dero
+# Eagle
 
 ## Table of contents
 
@@ -31,17 +31,17 @@ Filip Andrei
 
 #### Ce este limbajul?
 
-    *Dero* este un limbaj de programare portabil, compilat, tipizat static, conceput sa incurajeze practici bune de scriere de cod si sa asigure o experienta de dezvoltare a aplicatiilor prietenoasa.
+    *Eagle* este un limbaj de programare portabil, compilat, tipizat static, conceput sa incurajeze practici bune de scriere de cod si sa asigure o experienta de dezvoltare a aplicatiilor prietenoasa.
 
     ##### *Poliglot!*
-    Limbajul a fost conceput sa se integreze nativ cu alte limbaje de programare, fiind capabil sa vizeze mai multe platforme. Dero se integreaza perfect cu limbaje precum C, C++, Rust, Java, Kotlin si nu numai. Acelasi codebase scris in Dero poate fi compilat in executabil nativ, in JVM bytecode si/sau in JS, fara nevoia de a rescrie nimic.
+    Limbajul a fost conceput sa se integreze nativ cu alte limbaje de programare, fiind capabil sa vizeze mai multe platforme. Eagle se integreaza perfect cu limbaje precum C, C++, Rust, Java, Kotlin si nu numai. Acelasi codebase scris in Eagle poate fi compilat in executabil nativ, in JVM bytecode si/sau in JS, fara nevoia de a rescrie nimic.
     
-    Dero a fost proiectat cu gandul sa incurajeze good practices out of the box (mai multe despre filozofia si quirkurile limbajului in curand 🙂), dar este capabil sa ofere libertatea de a scrie cod non-ideomatic, intr-un mod responsabil, daca proiectul tau cere asta.
+    Eagle a fost proiectat cu gandul sa incurajeze good practices out of the box (mai multe despre filozofia si quirkurile limbajului in curand 🙂), dar este capabil sa ofere libertatea de a scrie cod non-ideomatic, intr-un mod responsabil, daca proiectul tau cere asta.
 
-    *Dero* pune la dispozitie dezvoltatorilor unelte precum:
+    *Eagle* pune la dispozitie dezvoltatorilor unelte precum:
     - Siguranta a memoriei prin dealocari automate, fara garbage collector
     - Incurajarea abstractizarilor zero-cost, pentru viteza turbo a programelor
-    - O librarie standard cu multiple implementari (asigurand atributul poliglot al limbajului, dar si posibilitatea folosirii librariei standard Dero intr-un proiect scris intr-un limbaj de programare diferit, per-se)
+    - O librarie standard cu multiple implementari (asigurand atributul poliglot al limbajului, dar si posibilitatea folosirii librariei standard Eagle intr-un proiect scris intr-un limbaj de programare diferit, per-se)
     - Un Developer Kit oficial cu toate uneltele de dezvoltare necesare (build system, documentation generator, framework de testare si mocking)
     ... si multe altele in viitor! 😁
      
@@ -55,7 +55,7 @@ Filip Andrei
 
 #### Hello, world!
 
-    ```dero
+    ```eagle
     function main() -> () {
         // This is a comment
         println("Hello, world!") // Look ma, no semicolons!
@@ -71,7 +71,7 @@ Filip Andrei
 
     Poti omite initializarea, dar variabila va fi initializata implicit in functie de tipul ei
 
-    ```dero
+    ```eagle
     function main() -> () {
         uint32 num = 2004 // immutable, primitive, stored on the stack
         String name = "Filip" // immutable, reference type, stored on the heap
