@@ -6,7 +6,7 @@ pub enum BackendDesiredOutput {
 }
 
 pub trait BackendAst {
-    fn get_desired_output() -> BackendDesiredOutput;
+    fn get_desired_output(&self) -> BackendDesiredOutput;
 }
 
 pub trait BackendAstConverter {
@@ -14,5 +14,6 @@ pub trait BackendAstConverter {
 }
 
 pub trait BackendOutputGenerator {
-    fn generate_output(&self, b_ast: BackendAst) -> String;
+    fn generate_output(&self, b_ast: Box<dyn BackendAst + '_>) -> String;
 }
+

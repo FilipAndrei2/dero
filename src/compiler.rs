@@ -1,6 +1,8 @@
-mod lexer;
-mod parser;
-mod backend_converter;
+pub mod lexer;
+pub mod parser;
+pub mod backend_converter;
+
+use std::rc::Rc;
 
 use lexer::Lexer;
 use parser::Parser;
@@ -33,6 +35,6 @@ impl <DiLexer: Lexer, DiParser: Parser, DiBackendAstConverter: BackendAstConvert
         let tokens = self.lexer.lexically_analyze(code);
         let ast = self.parser.semantically_analyze(tokens);
         let backend_ast = self.backend_ast_converter.convert_ast(ast); 
-        self.backend_output_generator.generate_output(backend_ast)
+        self.backend_output_generator.generate_output(Box::new(backend_ast))
     }
 }
