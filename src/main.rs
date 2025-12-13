@@ -1,11 +1,9 @@
-pub mod compiler;
-pub mod dummy_pipeline_components;
+mod lexer;
 
-use compiler::Compiler;
+use crate::lexer::Lexer;
 
-use crate::dummy_pipeline_components::{DummyBeAstConverter, DummyBeOutputGenerator, DummyLexer, DummyParser};
 fn main() {
-    let compiler= Compiler::new(DummyLexer, DummyParser, DummyBeAstConverter, DummyBeOutputGenerator);
-    let code: String = "println(\"Hello, world!\");".to_string();
-    compiler.compile(code);
+    let source_code = "1234";
+    let mut lexer: Lexer = Lexer::new(&source_code);
+    println!("{:?}", lexer.next_token());
 }
