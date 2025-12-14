@@ -92,7 +92,19 @@ impl Lexer {
     /// Returns the Float literal parse from [word_start..cursor], with floating dot point in
     /// point_pos position, relative to the string to be parsed
     fn parse_lit_float(&mut self, point_pos: usize) -> Option<LexiToken> {
-        todo!("Not implemented yet");
+        if self.word_start == self.cursor {
+            panic!("Floating point literal can't have only one letter");
+        }
+        let slice: String = self.chars[self.word_start..self.cursor].iter().collect();
+
+        match slice.parse::<f64>() {
+            Ok(num) => {
+                return Some(LexiToken::LitFloat(num));
+            }
+            Err(_) => {
+                return None;
+            }
+        }
     }
 
     /// Parses the numerical literal token found at the cursor
@@ -150,6 +162,9 @@ impl Lexer {
 
     // TODO: MAKE PRIVATE, IS PUB FOR DEBUG
     pub fn next_token(&mut self) -> Option<LexiToken> {
+        if self.cursor == self.size {
+            return Some(LexiToken::Eof);
+        }
         self.skip_whitespace();
         match self.chars[self.word_start] {
             '+' => Some(LexiToken::Plus),
