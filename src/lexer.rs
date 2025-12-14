@@ -1,4 +1,24 @@
 #[derive(Debug)]
+pub enum PrimitiveType {
+    U8,
+    U16,
+    U32,
+    U64,
+    USize,
+
+    I8,
+    I16,
+    I32,
+    I64,
+    ISize,
+
+    F32,
+    F64,
+
+    Char,
+}
+
+#[derive(Debug)]
 pub enum LexiToken {
     // Literals
     LitString(String),
@@ -30,7 +50,7 @@ pub enum LexiToken {
     Let,
 
     // Primitive
-    Int32,
+    Primitive(PrimitiveType),
 
     // End of file
     Eof,
@@ -67,7 +87,7 @@ impl Lexer {
             if !self.points_whitespace()? {
                 break;
             }
-            self.advance_cursor();
+            let _ = self.advance_cursor();
         }
         return Ok(false);
     }
@@ -223,6 +243,42 @@ impl Lexer {
         }
     }
 
+    #[inline(always)]
+    fn parse_primitive(&self, s: &str) -> Option<LexiToken> {
+        match s {
+            "u8" => Some(LexiToken::Primitive(PrimitiveType::U8)),
+            "u16" => Some(LexiToken::Primitive(PrimitiveType::U16)),
+            "u32" => Some(LexiToken::Primitive(PrimitiveType::U32)),
+            "u64" => Some(LexiToken::Primitive(PrimitiveType::U64)),
+            "usize" => Some(LexiToken::Primitive(PrimitiveType::USize)),
+
+            "i8" => Some(LexiToken::Primitive(PrimitiveType::I8)),
+            "i16" => Some(LexiToken::Primitive(PrimitiveType::I16)),
+            "i32" => Some(LexiToken::Primitive(PrimitiveType::I32)),
+            "i64" => Some(LexiToken::Primitive(PrimitiveType::I64)),
+            "isize" => Some(LexiToken::Primitive(PrimitiveType::ISize)),
+
+            "f32" => Some(LexiToken::Primitive(PrimitiveType::F32)),
+            "f64" => Some(LexiToken::Primitive(PrimitiveType::F64)),
+
+            "char" => Some(LexiToken::Primitive(PrimitiveType::Char)),
+            _ => None,
+        }
+    }
+
+    #[inline(always)]
+    fn parse_keyword(&self, s: &str) -> Option<LexiToken> {
+        match s {
+            "if" => {
+                return Some(LexiToken::If);
+            }
+
+            _ => {
+                return None;
+            }
+        }
+    }
+
     ///
     /// # Returns
     /// Err(()) if the token could not be parsed,
@@ -233,19 +289,20 @@ impl Lexer {
             }
         }
         self.prepare_lexema()?;
+
         let lexema: String = self.chars[self.word_start..self.cursor].iter().collect();
-        match lexema.as_str() {
-            // Keywords check
-            "if" => {
-                return Ok(LexiToken::If);
-            }
-            "let" => {
-                return Ok(LexiToken::Let);
-            }
-            _ => {
-                return Ok(LexiToken::LitString(lexema));
-            }
+
+        let mut keyword_tk = self.parse_primitive(lexema.as_str());
+        if let Some(tk) = keyword_tk {
+            return Ok(tk);
         }
+
+        keyword_tk = self.parse_keyword(lexema.as_str());
+        if let Some(tk) = keyword_tk {
+            return Ok(tk);
+        }
+
+        return Ok(LexiToken::LitString(lexema));
     }
 
     // TODO: MAKE PRIVATE, IS PUB FOR DEBUG

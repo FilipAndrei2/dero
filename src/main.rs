@@ -3,7 +3,7 @@ mod lexer;
 use crate::lexer::{Lexer, LexiToken};
 
 fn main() {
-    let source_code = "let variabila = 32 ";
+    let source_code = " \ti64 x = 32 ";
     let mut lexer = Lexer::new(&source_code);
     let mut tk = lexer.next_token();
     while !matches!(tk, Ok(LexiToken::Eof)) {
