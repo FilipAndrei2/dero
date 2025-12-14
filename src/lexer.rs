@@ -56,23 +56,20 @@ impl Lexer {
     /// Skips all whitespace chars and positions the cursor at the begining of a word. Does not
     /// change word_start
     /// # Returns
-    /// Err(()) if the cursor points to the end
-    /// Ok(()) if the operation was succesfull
-    fn skip_whitespace(&mut self) -> Result<(), ()> {
-        if self.points_end() {
-            return Err(());
-        }
+    /// Ok(true) if eof was reached
+    /// Ok(false) if eof wan not reached
+    /// Err(()) if an error occured.
+    fn skip_whitespace(&mut self) -> Result<bool, ()> {
         loop {
-            match self.chars[self.cursor] {
-                ' ' | '\t' | '\n' => {
-                    self.advance_cursor()?;
-                }
-                _ => {
-                    break;
-                }
+            if self.points_end() {
+                return Ok(true);
             }
+            if !self.points_whitespace()? {
+                break;
+            }
+            self.advance_cursor();
         }
-        Ok(())
+        return Ok(false);
     }
 
     /// # Returns
@@ -85,10 +82,10 @@ impl Lexer {
     /// Advances the cursor, with a bound check
     /// # Returns
     /// Ok(()) if the cursor was advanced
-    /// Err(()) if the cursor is on the last char of the buffer
+    /// Err(()) if trying to go past the last character in buffer (past 'EOF')
     #[inline(always)]
     fn advance_cursor(&mut self) -> Result<(), ()> {
-        if self.cursor + 1 >= self.size {
+        if self.cursor == self.size {
             // End of buffer reached
             return Err(());
         }
@@ -101,7 +98,7 @@ impl Lexer {
     /// Ok(false) if the cursor points to a non-whitespace char
     /// Err(()) if the cursor points to end of buffer
     #[inline(always)]
-    fn points_whitespace(&mut self) -> Result<bool, ()> {
+    fn points_whitespace(&self) -> Result<bool, ()> {
         if self.points_end() {
             return Err(());
         }
@@ -113,6 +110,37 @@ impl Lexer {
                 return Ok(false);
             }
         }
+    }
+
+    /// # Returns
+    /// Ok(true) if the cursor points to a digit char ('0'..'9')
+    /// Of(false) if the cursor does not point to a digit char
+    /// Err(()) if the cursor points to end of buffer
+    #[inline(always)]
+    fn points_digit(&self) -> Result<bool, ()> {
+        if self.points_end() {
+            return Err(());
+        }
+        match self.chars[self.cursor] {
+            '0'..'9' => {
+                return Ok(true);
+            }
+            _ => {
+                return Ok(false);
+            }
+        }
+    }
+
+    /// # Returns
+    /// Ok(true) if the cursor points to the specified char
+    /// Of(false) if the cursor does not point to the specified char
+    /// Err(()) if the cursor points to end of buffer
+    #[inline(always)]
+    fn points_char(&self, ch: char) -> Result<bool, ()> {
+        if self.points_end() {
+            return Err(());
+        }
+        return Ok(self.chars[self.cursor] == ch);
     }
 
     /// Positions the self.word_start and self.cursor at the begining and end of a lexema separated
@@ -127,48 +155,27 @@ impl Lexer {
         }
         self.word_start = self.cursor;
         while !self.points_whitespace()? {
-            self.advance_cursor();
+            self.advance_cursor()?;
         }
         Ok(())
     }
 
-    /// Returns the Integer literal parsed from [word_start..cursor)
-    /// If word_start == cursor, returns a token formed from the character found at the cursor
-    fn parse_lit_int(&mut self) -> Option<LexiToken> {
-        if self.word_start == self.cursor {
-            let res: i32 = self.chars[self.cursor] as i32;
-            if res < 10 {
-                return Some(LexiToken::LitInt(res));
-            } else {
-                return None;
-            }
-        }
-        let slice: String = self.chars[self.word_start..self.cursor].iter().collect();
-
-        match slice.parse::<i32>() {
-            Ok(num) => {
-                return Some(LexiToken::LitInt(num));
-            }
+    fn parse_lit_int(&self) -> Result<LexiToken, ()> {
+        let lexema_str: String = self.chars[self.word_start..self.cursor].iter().collect();
+        match lexema_str.as_str().parse::<i32>() {
+            Ok(tkn_val) => return Ok(LexiToken::LitInt(tkn_val)),
             Err(_) => {
-                return None;
+                return Err(());
             }
         }
     }
 
-    /// Returns the Float literal parse from [word_start..cursor], with floating dot point in
-    /// point_pos position, relative to the string to be parsed
-    fn parse_lit_float(&mut self, point_pos: usize) -> Option<LexiToken> {
-        if self.word_start == self.cursor {
-            panic!("Floating point literal can't have only one letter");
-        }
-        let slice: String = self.chars[self.word_start..self.cursor].iter().collect();
-
-        match slice.parse::<f64>() {
-            Ok(num) => {
-                return Some(LexiToken::LitFloat(num));
-            }
+    fn parse_lit_float(&self) -> Result<LexiToken, ()> {
+        let lexema_str: String = self.chars[self.word_start..self.cursor].iter().collect();
+        match lexema_str.as_str().parse::<f64>() {
+            Ok(tkn_val) => return Ok(LexiToken::LitFloat(tkn_val)),
             Err(_) => {
-                return None;
+                return Err(());
             }
         }
     }
@@ -176,44 +183,43 @@ impl Lexer {
     /// Parses the numerical literal token found at the cursor
     /// The cursor is left at the start of the next unprocessed char
     /// # Returns
-    /// Some(Eof) if the end of file was reached
-    /// None if no char literal is found at the cursor
-    /// Some(LitInt) if the literal could be interpreted as an integer literal (no floating point)
-    /// Some(LitFloat) if the literal could be interpreted as a float integer (one . found inside
+    /// Ok(Eof) if the end of file was reached
+    /// Ok(LitInt) if the literal could be interpreted as an integer literal (no floating point)
+    /// Ok(LitFloat) if the literal could be interpreted as a float integer (one . found inside
     /// the literal)
-    fn parse_num(&mut self) -> Option<LexiToken> {
-        self.word_start = self.cursor;
-        let mut point_pos: i64 = -1; // -1 means no floating point
-        loop {
-            if self.cursor >= self.size {
-                if self.cursor == self.word_start {
-                    // No token was read
-                    return Some(LexiToken::Eof); // End of file reached,
-                }
-                if point_pos == -1 {
-                    return self.parse_lit_int();
-                } else {
-                    return self.parse_lit_float(point_pos as usize);
-                }
-            }
+    /// Err(()) if an error happened during the parsing, or if the present lexema could not be
+    /// interpreted as a numerical value
+    fn parse_num(&mut self) -> Result<LexiToken, ()> {
+        if self.points_end() {
+            return Err(());
+        }
 
-            if self.chars[self.cursor] == '.' {
-                if point_pos != -1 {
-                    // Second . found - Return None
-                    return None;
-                }
-                point_pos = (self.cursor - self.word_start) as i64;
-            } else if !self.chars[self.cursor].is_digit(10) {
-                if self.cursor == self.word_start {
-                    return None;
-                }
-                if point_pos == -1 {
-                    return self.parse_lit_int();
+        self.word_start = self.cursor;
+        let mut fp_pos: isize = if self.points_char('.')? {
+            0 // 0th char in lexem is '.'
+        } else {
+            -1
+        }; // -1 => no floating point found
+
+        loop {
+            if self.points_char('.')? {
+                if fp_pos != -1 {
+                    // Second floating point found, raise error
+                    return Err(());
                 } else {
-                    return self.parse_lit_float(point_pos as usize);
+                    fp_pos = (self.cursor - self.word_start) as isize;
                 }
+            } else if !self.points_digit()? {
+                break;
             }
-            self.cursor += 1;
+            self.advance_cursor()?;
+        }
+        if fp_pos == -1 {
+            // We must parse an int
+            return self.parse_lit_int();
+        } else {
+            // We must parse a float
+            return self.parse_lit_float();
         }
     }
 
@@ -222,9 +228,11 @@ impl Lexer {
     /// Err(()) if the token could not be parsed,
     fn parse_alpha(&mut self) -> Result<LexiToken, ()> {
         if self.points_whitespace()? {
-            self.skip_whitespace();
+            if self.skip_whitespace()? {
+                return Err(());
+            }
         }
-        self.prepare_lexema();
+        self.prepare_lexema()?;
         let lexema: String = self.chars[self.word_start..self.cursor].iter().collect();
         match lexema.as_str() {
             // Keywords check
@@ -245,23 +253,29 @@ impl Lexer {
         if self.points_end() {
             return Ok(LexiToken::Eof);
         }
-        self.skip_whitespace();
-        match self.chars[self.word_start] {
-            '+' => Ok(LexiToken::Plus),
+        if self.skip_whitespace()? {
+            return Ok(LexiToken::Eof);
+        }
+        match self.chars[self.cursor] {
+            '+' => {
+                self.advance_cursor()?;
+                return Ok(LexiToken::Plus);
+            }
             '-' => Ok(LexiToken::Minus),
             '*' => Ok(LexiToken::Star),
             '\\' => Ok(LexiToken::Slash),
             '%' => Ok(LexiToken::Percent),
+            '=' => {
+                self.advance_cursor()?;
+                return Ok(LexiToken::Eq);
+            }
 
             'a'..'z' | 'A'..'Z' | '_' => {
                 return self.parse_alpha();
             }
+
             '0'..'9' => {
-                if let Some(res) = self.parse_num() {
-                    return Ok(res);
-                } else {
-                    return Err(());
-                }
+                return self.parse_num();
             }
 
             _ => Err(()),
