@@ -26,6 +26,8 @@ pub enum LexiToken {
     Comma,
 
     // Keywords
+    If,
+    Let,
 
     // Primitive
     Int32,
@@ -53,17 +55,81 @@ impl Lexer {
 
     /// Skips all whitespace chars and positions the cursor at the begining of a word. Does not
     /// change word_start
-    fn skip_whitespace(&mut self) {
+    /// # Returns
+    /// Err(()) if the cursor points to the end
+    /// Ok(()) if the operation was succesfull
+    fn skip_whitespace(&mut self) -> Result<(), ()> {
+        if self.points_end() {
+            return Err(());
+        }
         loop {
             match self.chars[self.cursor] {
                 ' ' | '\t' | '\n' => {
-                    self.cursor += 1;
+                    self.advance_cursor()?;
                 }
                 _ => {
                     break;
                 }
             }
         }
+        Ok(())
+    }
+
+    /// # Returns
+    /// true if the cursor is at the end of the buffer
+    /// false otherwise
+    fn points_end(&self) -> bool {
+        return self.cursor >= self.size;
+    }
+
+    /// Advances the cursor, with a bound check
+    /// # Returns
+    /// Ok(()) if the cursor was advanced
+    /// Err(()) if the cursor is on the last char of the buffer
+    #[inline(always)]
+    fn advance_cursor(&mut self) -> Result<(), ()> {
+        if self.cursor + 1 >= self.size {
+            // End of buffer reached
+            return Err(());
+        }
+        self.cursor += 1;
+        return Ok(());
+    }
+
+    /// # Returns
+    /// Ok(true) if the cursor points to a whitespace character (' ', '\t', '\n')
+    /// Ok(false) if the cursor points to a non-whitespace char
+    /// Err(()) if the cursor points to end of buffer
+    #[inline(always)]
+    fn points_whitespace(&mut self) -> Result<bool, ()> {
+        if self.points_end() {
+            return Err(());
+        }
+        match self.chars[self.cursor] {
+            ' ' | '\t' | '\n' => {
+                return Ok(true);
+            }
+            _ => {
+                return Ok(false);
+            }
+        }
+    }
+
+    /// Positions the self.word_start and self.cursor at the begining and end of a lexema separated
+    /// by whitespace both sides
+    /// After the call, the lexema is found in the interval [word_start..cursor)
+    /// # Returns
+    /// Ok(()) if the operation succeded
+    /// Err(()) if the end of buff was reached
+    fn prepare_lexema(&mut self) -> Result<(), ()> {
+        while self.points_whitespace()? {
+            self.skip_whitespace();
+        }
+        self.word_start = self.cursor;
+        while !self.points_whitespace()? {
+            self.advance_cursor();
+        }
+        Ok(())
     }
 
     /// Returns the Integer literal parsed from [word_start..cursor)
@@ -115,16 +181,11 @@ impl Lexer {
     /// Some(LitInt) if the literal could be interpreted as an integer literal (no floating point)
     /// Some(LitFloat) if the literal could be interpreted as a float integer (one . found inside
     /// the literal)
-    fn parse_num_lit(&mut self) -> Option<LexiToken> {
+    fn parse_num(&mut self) -> Option<LexiToken> {
         self.word_start = self.cursor;
         let mut point_pos: i64 = -1; // -1 means no floating point
         loop {
             if self.cursor >= self.size {
-                println!("Am atins eof");
-                println!(
-                    "start: {}, cursor: {}, size: {}",
-                    self.word_start, self.cursor, self.size
-                );
                 if self.cursor == self.word_start {
                     // No token was read
                     return Some(LexiToken::Eof); // End of file reached,
@@ -156,27 +217,54 @@ impl Lexer {
         }
     }
 
-    fn parse_alphastr_lit(&mut self) -> Option<LexiToken> {
-        todo!();
+    ///
+    /// # Returns
+    /// Err(()) if the token could not be parsed,
+    fn parse_alpha(&mut self) -> Result<LexiToken, ()> {
+        if self.points_whitespace()? {
+            self.skip_whitespace();
+        }
+        self.prepare_lexema();
+        let lexema: String = self.chars[self.word_start..self.cursor].iter().collect();
+        match lexema.as_str() {
+            // Keywords check
+            "if" => {
+                return Ok(LexiToken::If);
+            }
+            "let" => {
+                return Ok(LexiToken::Let);
+            }
+            _ => {
+                return Ok(LexiToken::LitString(lexema));
+            }
+        }
     }
 
     // TODO: MAKE PRIVATE, IS PUB FOR DEBUG
-    pub fn next_token(&mut self) -> Option<LexiToken> {
-        if self.cursor == self.size {
-            return Some(LexiToken::Eof);
+    pub fn next_token(&mut self) -> Result<LexiToken, ()> {
+        if self.points_end() {
+            return Ok(LexiToken::Eof);
         }
         self.skip_whitespace();
         match self.chars[self.word_start] {
-            '+' => Some(LexiToken::Plus),
-            '-' => Some(LexiToken::Minus),
-            '*' => Some(LexiToken::Star),
-            '\\' => Some(LexiToken::Slash),
-            '%' => Some(LexiToken::Percent),
+            '+' => Ok(LexiToken::Plus),
+            '-' => Ok(LexiToken::Minus),
+            '*' => Ok(LexiToken::Star),
+            '\\' => Ok(LexiToken::Slash),
+            '%' => Ok(LexiToken::Percent),
 
-            'a'..'z' | 'A'..'Z' | '_' => self.parse_alphastr_lit(),
-            '0'..'9' => self.parse_num_lit(),
+            'a'..'z' | 'A'..'Z' | '_' => {
+                return self.parse_alpha();
+            }
+            '0'..'9' => {
+                if let Some(res) = self.parse_num() {
+                    return Ok(res);
+                } else {
+                    return Err(());
+                }
+            }
 
-            _ => None,
+            _ => Err(()),
         }
     }
 }
