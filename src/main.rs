@@ -1,17 +1,5 @@
-mod lexer;
-
-use crate::lexer::{Lexer, LexiToken};
+mod log;
 
 fn main() {
-    let source_code = " \ti64 x = 32 ";
-    let mut lexer = Lexer::new(&source_code);
-    let mut tk = lexer.next_token();
-    while !matches!(tk, Ok(LexiToken::Eof)) {
-        println!("{:?}", tk);
-        tk = lexer.next_token();
-        if tk.is_err() {
-            println!("Avem o problema grava");
-            break;
-        }
-    }
+    info!("Salut");
 }

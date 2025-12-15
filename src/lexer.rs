@@ -305,8 +305,7 @@ impl Lexer {
         return Ok(LexiToken::LitString(lexema));
     }
 
-    // TODO: MAKE PRIVATE, IS PUB FOR DEBUG
-    pub fn next_token(&mut self) -> Result<LexiToken, ()> {
+    fn next_token(&mut self) -> Result<LexiToken, ()> {
         if self.points_end() {
             return Ok(LexiToken::Eof);
         }
@@ -338,4 +337,26 @@ impl Lexer {
             _ => Err(()),
         }
     }
+
+    pub fn tokenize_source_code(mut self) -> Vec<LexiToken> {
+        let mut eof: bool = false;
+        let mut res: Vec<LexiToken> = vec![];
+        while !eof {
+            if let Ok(tkn) = self.next_token() {
+                if let LexiToken::Eof = tkn {
+                    eof = true;
+                }
+                res.push(tkn);
+            } else {
+                // TODO: More robust error
+                println!("Compilation error: Error during lexing");
+            }
+        }
+        return res;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }
