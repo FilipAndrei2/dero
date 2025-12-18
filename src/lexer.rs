@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[derive(Debug)]
 pub enum PrimitiveType {
     U8,
@@ -64,12 +66,12 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    pub fn new(input_buff: &str) -> Self {
+    pub fn new(input_buff: Vec<char>) -> Self {
         Self {
-            chars: input_buff.chars().collect(),
+            size: input_buff.len(),
+            chars: input_buff,
             cursor: 0 as usize,
             word_start: 0 as usize,
-            size: input_buff.chars().count(),
         }
     }
 
